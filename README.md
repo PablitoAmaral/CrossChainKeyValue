@@ -1,6 +1,6 @@
 # CrossChainKeyValue
 
-![CrossChainKeyValue](./image.png)
+![CrossChainKeyValue](./union_bera.png)
 
 ## Description
 
