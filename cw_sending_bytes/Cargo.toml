@@ -1,0 +1,21 @@
+[package]
+name = "sending_bytes"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", 'rlib']
+
+[features]
+library = []
+
+[dependencies]
+cosmwasm-schema = { version = "2.1.4" }
+cosmwasm-std = { version = "2.1.4", default-features = false, features = ["std", "staking", "stargate"] }
+serde = { version = "1.0.210", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.64", default-features = false }
+cw-storage-plus = "2.0.0"
+
+[profile.release]
+opt-level = "z"
+strip = true
