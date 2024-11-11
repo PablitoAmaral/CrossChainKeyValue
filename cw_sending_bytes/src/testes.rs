@@ -85,12 +85,15 @@ mod tests {
 
         let key = "test_key".to_string();
         let expected_value = "test_value".to_string();
+
         contract::VALUES
             .save(&mut deps.storage, key.clone(), &expected_value)
             .unwrap();
 
-        let packet_data = key.clone().into_bytes();
-        let packet = IbcPacket::new(
+        let packet = msg::Packet::Read(key.clone());
+        let packet_data = packet.encode();
+
+        let ibc_packet = IbcPacket::new(
             Binary::from(packet_data),
             IbcEndpoint {
                 port_id: "src_port".to_string(),
@@ -103,7 +106,7 @@ mod tests {
             1,
             IbcTimeout::with_timestamp(Timestamp::from_seconds(0)),
         );
-        let msg = IbcPacketReceiveMsg::new(packet, Addr::unchecked("relayer_address"));
+        let msg = IbcPacketReceiveMsg::new(ibc_packet, Addr::unchecked("relayer_address"));
 
         let res = ibc::ibc_packet_receive(deps.as_mut(), env, msg).unwrap();
 
@@ -113,7 +116,11 @@ mod tests {
         );
         assert_eq!(
             res.attributes,
-            vec![attr("action", "received_packet"), attr("success", "true"),]
+            vec![
+                attr("action", "received_packet"),
+                attr("operation", "read"),
+                attr("success", "true"),
+            ]
         );
     }
 
