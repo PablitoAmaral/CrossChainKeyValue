@@ -1,5 +1,6 @@
 pub mod contract;
 pub mod ibc;
+pub mod msg;
 pub mod testes;
 
 use cosmwasm_std::StdError;
@@ -13,6 +14,8 @@ pub enum ContractError {
     InvalidIbcVersion { version: String },
     #[error("Only supports unordered channel")]
     OnlyOrderedChannel {},
-    #[error("The packet has not been serialized using ETH ABI")]
+    #[error("The packet has not been serialized using ETH ABI")] //alterar isso!
     KeyNotFound,
+    #[error("The packet has not been serialized using ETH ABI")]
+    EthAbiDecoding,
 }

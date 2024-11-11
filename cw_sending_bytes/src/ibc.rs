@@ -7,7 +7,7 @@ use cosmwasm_std::{
 pub const PROTOCOL_VERSION: &str = "key-value-protocol";
 pub const PROTOCOL_ORDERING: IbcOrder = IbcOrder::Unordered;
 
-use crate::{contract, ContractError};
+use crate::{contract, msg, ContractError};
 
 /// chanell lyfecicle
 
@@ -75,16 +75,37 @@ pub fn ibc_packet_receive(
     msg: IbcPacketReceiveMsg,
 ) -> Result<IbcReceiveResponse, ContractError> {
     let packet = msg.packet;
-    let key: String = String::from_utf8(packet.data.to_vec())
+
+    // decode
+    let decoded_packet = msg::Packet::decode(packet.data.as_slice())
         .map_err(|_| StdError::generic_err("Invalid packet data"))?;
 
-    let value: String = contract::VALUES
-        .may_load(deps.storage, key)?
-        .ok_or(ContractError::KeyNotFound)?;
+    match decoded_packet {
+        msg::Packet::Read(key) => {
+            // Fetch the value
+            let value: String = contract::VALUES
+                .may_load(deps.storage, key.clone())?
+                .ok_or(ContractError::KeyNotFound)?;
 
-    Ok(IbcReceiveResponse::new(ack_success(value))
-        .add_attribute("action", "received_packet")
-        .add_attribute("success", "true"))
+            // Return the value
+            Ok(IbcReceiveResponse::new(ack_success(value))
+                .add_attribute("action", "received_packet")
+                .add_attribute("operation", "read")
+                .add_attribute("success", "true"))
+        }
+        msg::Packet::Write(key, value) => {
+            // Store the key/value
+            contract::VALUES.save(deps.storage, key.clone(), &value)?;
+
+            // Return the response indicating success in the write operation
+            Ok(
+                IbcReceiveResponse::new(ack_success("write_success".to_string()))
+                    .add_attribute("action", "received_packet")
+                    .add_attribute("operation", "write")
+                    .add_attribute("success", "true"),
+            )
+        }
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

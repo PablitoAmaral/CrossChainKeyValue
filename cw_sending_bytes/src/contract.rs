@@ -1,17 +1,13 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, IbcMsg, IbcTimeout, Binary,Timestamp};
+use cosmwasm_std::{Binary, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo, Response, Timestamp};
 use cw_storage_plus::Map;
 
-use crate::ContractError;
+use crate::{
+    msg::{ExecuteMsg, InitMsg},
+    ContractError,
+};
 
 pub const VALUES: Map<String, String> = Map::new("values");
-
-#[cw_serde]
-pub struct InitMsg {
-    pub initial_key: String,
-    pub initial_value: String,
-}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -24,15 +20,6 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-
-#[cw_serde]
-pub enum ExecuteMsg {
-    Key {
-        channel_id: String,
-        key: String,
-    },
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     _deps: DepsMut,
@@ -40,16 +27,17 @@ pub fn execute(
     _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    match msg {
-        ExecuteMsg::Key { channel_id, key } => {
-            let ibc_packet = IbcMsg::SendPacket {
-                channel_id,
-                data: Binary::new(key.into_bytes()),
-                timeout: IbcTimeout::with_timestamp(Timestamp::from_nanos(
-                    env.block.time.nanos() + (60 * 1_000_000_000 *5)
-                ))
-            };
-            Ok(Response::default().add_message(ibc_packet))
-        }
-    }
+    let ExecuteMsg { channel_id, packet } = msg;
+
+    let encoded_data = packet.encode();
+
+    let ibc_packet = IbcMsg::SendPacket {
+        channel_id,
+        data: Binary::new(encoded_data),
+        timeout: IbcTimeout::with_timestamp(Timestamp::from_nanos(
+            env.block.time.nanos() + (60 * 1_000_000_000 * 5),
+        )),
+    };
+
+    Ok(Response::default().add_message(ibc_packet))
 }
